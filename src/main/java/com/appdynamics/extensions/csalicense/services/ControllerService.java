@@ -9,11 +9,14 @@ import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -316,6 +319,86 @@ public class ControllerService {
 
 			this.listServersLicensed.put(name, Integer.parseInt(vCPU));
 		}
+	}
+
+	public void createDashboard(String taskDir) throws Exception {
+		if (!isDashboardExists()) {
+
+			HttpRequest httpRequest = null;
+			HttpResponse<String> httpResponse;
+
+			Path filePath = Path.of(taskDir + "/csa_license.json");
+			byte[] fileContent = Files.readAllBytes(filePath);
+
+			String boundary = UUID.randomUUID().toString();
+
+			StringBuffer formData = new StringBuffer();
+
+			formData.append("--" + boundary + "\r\n");
+			formData.append(
+					"Content-Disposition: form-data; name=\"file\"; filename=\"" + filePath.getFileName()
+							+ "\"\r\n\r\n");
+
+			byte[] partHeaderBytes = formData.toString().getBytes();
+			byte[] partFooterBytes = ("\r\n--" + boundary + "--\r\n").getBytes();
+
+			// Concatenando as partes para formar o corpo da requisição
+			byte[] requestBody = new byte[partHeaderBytes.length + fileContent.length + partFooterBytes.length];
+			System.arraycopy(partHeaderBytes, 0, requestBody, 0, partHeaderBytes.length);
+			System.arraycopy(fileContent, 0, requestBody, partHeaderBytes.length, fileContent.length);
+			System.arraycopy(partFooterBytes, 0, requestBody, partHeaderBytes.length + fileContent.length,
+					partFooterBytes.length);
+
+			httpRequest = HttpRequest.newBuilder()
+					.uri(new URI(controllerInfo.getControllerHost() + "/CustomDashboardImportExportServlet"))
+					.header("Content-Type", "multipart/form-data;boundary=" + boundary)
+					.header("Accept", "text/html,application/xhtml+xml,application/xml")
+					.header("Cookie", Common.getCookies(this.cookies))
+					.POST(HttpRequest.BodyPublishers.ofByteArray(requestBody))
+					.build();
+
+			httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+			logger.debug("{} Response Status Code: [{}]", Common.getLogHeader(this, "getRequest"),
+					httpResponse.statusCode());
+			logger.debug("{} Response Status Body: [{}]", Common.getLogHeader(this, "getRequest"), httpResponse.body());
+
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
+	public boolean isDashboardExists() throws Exception {
+
+		// /controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=
+		logger.debug("{} Searching nodes on CSA...", Common.getLogHeader(this, "refreshNodes"));
+
+		Boolean thereIsDashboard = false;
+
+		HttpResponse<String> httpResponse = getRequest(
+				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=",
+				Constants.HTTP_METHOD_GET, "");
+
+		if (httpResponse.statusCode() == 200) {
+
+			Object[] dashObjects = objectMapper.readValue(
+					cleanRespondeBody(
+							httpResponse.body(),
+							"\"data\" :",
+							"} ], \"totalCount\" :"),
+					Object[].class);
+
+			for (Object data : dashObjects) {
+				LinkedHashMap<String, Object> values = (LinkedHashMap<String, Object>) data;
+				String name = (String) values.get("name");
+				if (name.equals("CSA License")) {
+					thereIsDashboard = true;
+					break;
+				}
+			}
+
+		}
+
+		return thereIsDashboard;
 	}
 
 }

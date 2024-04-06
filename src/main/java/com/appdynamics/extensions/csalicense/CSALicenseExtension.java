@@ -83,6 +83,12 @@ public class CSALicenseExtension extends AManagedMonitor {
 				threads.add(controllerThread);
 			}
 
+			String saveDashboard = (String) yamlConfig.get(Constants.SAVE_DASHBOARD);
+			if (saveDashboard != null && !saveDashboard.equals("")) {
+				ControllerService cs = this.listControllerService.get(saveDashboard);
+				cs.createDashboard(taskExecutionContext.getTaskDir());
+			}
+
 			startSubTask = Instant.now();
 			this.logger.debug("{} Starting controller data capture threads...", Common.getLogHeader(this, "run"));
 			for (Thread thread : threads) {
