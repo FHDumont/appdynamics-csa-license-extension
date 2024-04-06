@@ -1,0 +1,30 @@
+<!--
+  ~ Copyright 2013. AppDynamics LLC and its affiliates.
+  ~ All Rights Reserved.
+  ~ This is unpublished proprietary source code of AppDynamics LLC and its affiliates.
+  ~ The copyright notice above does not evidence any actual or intended publication of such source
+code.
+  -->
+
+<monitor>
+        <name>CSALicense</name>
+        <type>managed</type>
+        <description>CSA License</description>
+        <monitor-configuration></monitor-configuration>
+        <monitor-run-task>
+                <execution-style>periodic</execution-style>
+                <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+                <name>CSA License Run Task</name>
+                <display-name>CSA License Task</display-name>
+                <description>CSA License Task</description>
+                <type>java</type>
+                <task-arguments>
+                        <argument name="config-file" is-required="true" default-value="config.yml" />
+                </task-arguments>
+                <java-task>
+                        <classpath>csa-license-extension.jar</classpath>
+                        <load-jars-in-classpath-dirs>true</load-jars-in-classpath-dirs>
+                        <impl-class>com.appdynamics.extensions.csalicense.CSALicenseExtension</impl-class>
+                </java-task>
+        </monitor-run-task>
+</monitor>
