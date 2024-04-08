@@ -13,7 +13,7 @@ code.
         <monitor-configuration></monitor-configuration>
         <monitor-run-task>
                 <execution-style>periodic</execution-style>
-                <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+                <execution-frequency-in-seconds>300</execution-frequency-in-seconds>
                 <name>CSA License Run Task</name>
                 <display-name>CSA License Task</display-name>
                 <description>CSA License Task</description>
