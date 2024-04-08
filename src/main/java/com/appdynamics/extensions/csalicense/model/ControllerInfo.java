@@ -13,6 +13,24 @@ public class ControllerInfo {
 
 	private Boolean isAvaliable;
 	private Boolean isAllowedCSA;
+	private String encryptionKey;
+	private String machineAgentName;
+
+	public String getMachineAgentName() {
+		return machineAgentName;
+	}
+
+	public void setMachineAgentName(String machineAgentName) {
+		this.machineAgentName = machineAgentName;
+	}
+
+	public String getEncryptionKey() {
+		return encryptionKey;
+	}
+
+	public void setEncryptionKey(String encryptionKey) {
+		this.encryptionKey = encryptionKey;
+	}
 
 	public Boolean isAllowedCSA() {
 		return isAllowedCSA;

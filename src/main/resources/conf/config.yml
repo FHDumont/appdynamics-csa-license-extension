@@ -1,15 +1,17 @@
 controllers:
-  - displayName: "Controller Production"
-    controllerHost: "https://xxxx.saas.appdynamics.com"
-    userName: "e-mail@acme.com"
-    password: "mypassowrd"
-    accountName: "xxxx"
+  - displayName: Controller Production
+    controllerHost: https://xxxx.saas.appdynamics.com
+    userName: e-mail@acme.com
+    password: mypassowrd
+    accountName: xxxx
     proxyHost:
     proxyPort:
     proxySsl:
 
 numberOfThreads: 30
-metricPrefix: "Custom Metrics|CSA-License|"
-encryptionKey: ""
+metricPrefix: Custom Metrics|CSA-License|
+encryptionKey:
 formatDate: dd/MM/yyyy HH:mm:ss
 publishMetrics: true
+saveDashboard: https://xxxx.saas.appdynamics.com
+machineAgentName: MACHINE_AGENT_NAME

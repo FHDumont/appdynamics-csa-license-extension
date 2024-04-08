@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
+import com.appdynamics.extensions.crypto.Decryptor.DecryptionException;
 import com.appdynamics.extensions.csalicense.model.CSAApplication;
 import com.appdynamics.extensions.csalicense.model.CSANode;
 import com.appdynamics.extensions.csalicense.model.CSATier;
@@ -29,8 +31,11 @@ import com.appdynamics.extensions.csalicense.model.Node;
 import com.appdynamics.extensions.csalicense.util.Common;
 import com.appdynamics.extensions.csalicense.util.Constants;
 import com.appdynamics.extensions.logging.ExtensionsLoggerFactory;
+import com.appdynamics.extensions.util.CryptoUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 
 public class ControllerService {
 
@@ -45,8 +50,17 @@ public class ControllerService {
 
 	private ObjectMapper objectMapper;
 
-	public ControllerService(ControllerInfo controllerInfo) throws Exception {
+	public ControllerService(ControllerInfo controllerInfo, Map<String, Object> yamlConfig) throws Exception {
 		this.controllerInfo = controllerInfo;
+
+		try {
+			this.controllerInfo
+					.setPassword(getPassword(controllerInfo.getPassword(),
+							(String) yamlConfig.get(Constants.ENCRYPTION_KEY)));
+		} catch (DecryptionException exDecryption) {
+			logger.error("Error getPassword for controller {}", controllerInfo.getControllerHost(), exDecryption);
+		}
+		this.controllerInfo.setMachineAgentName((String) yamlConfig.get(Constants.MACHINE_AGENT_NAME));
 
 		logger.info("{} Connecting to controller: [{}] using username: [{}]",
 				Common.getLogHeader(this, "constructor"),
@@ -328,7 +342,10 @@ public class ControllerService {
 			HttpResponse<String> httpResponse;
 
 			Path filePath = Path.of(taskDir + "/csa_license.json");
-			byte[] fileContent = Files.readAllBytes(filePath);
+
+			String contentFile = Files.readString(filePath, StandardCharsets.UTF_8);
+			contentFile = contentFile.replaceAll("MACHINE_AGENT_NAME", this.controllerInfo.getMachineAgentName());
+			byte[] fileContent = contentFile.getBytes(StandardCharsets.UTF_8);
 
 			String boundary = UUID.randomUUID().toString();
 
@@ -399,6 +416,17 @@ public class ControllerService {
 		}
 
 		return thereIsDashboard;
+	}
+
+	private String getPassword(String password, String encryptionKey) {
+		if (!Strings.isNullOrEmpty(encryptionKey)) {
+			Map<String, String> cryptoMap = Maps.newHashMap();
+			cryptoMap.put(com.appdynamics.extensions.Constants.ENCRYPTED_PASSWORD, password);
+			cryptoMap.put(com.appdynamics.extensions.Constants.ENCRYPTION_KEY, encryptionKey);
+			return CryptoUtils.getPassword(cryptoMap);
+		}
+
+		return password;
 	}
 
 }

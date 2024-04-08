@@ -15,6 +15,7 @@ import com.appdynamics.extensions.csalicense.threads.ControllerThread;
 import com.appdynamics.extensions.csalicense.util.Common;
 import com.appdynamics.extensions.csalicense.util.Constants;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.singularity.ee.agent.systemagent.api.AManagedMonitor;
 import com.singularity.ee.agent.systemagent.api.MetricWriter;
 import com.singularity.ee.agent.systemagent.api.TaskExecutionContext;
@@ -75,7 +76,7 @@ public class CSALicenseExtension extends AManagedMonitor {
 			listControllerService = new HashMap<>();
 			threads = new ArrayList<>();
 			for (ControllerInfo ci : listControllerInfo) {
-				ControllerService cs = new ControllerService(ci);
+				ControllerService cs = new ControllerService(ci, yamlConfig);
 				listControllerService.put(ci.getControllerHost(), cs);
 
 				ControllerThread controllerThread = new ControllerThread(cs);
@@ -200,7 +201,7 @@ public class CSALicenseExtension extends AManagedMonitor {
 
 	protected void publicMetric(String metricName, Object metricValue,
 			String aggregation, String timeRollup, String cluster) throws Exception {
-		this.logger.info("Printing Metric [{}/{}/{}] [{}]=[{}]", aggregation, timeRollup, cluster,
+		this.logger.debug("Printing Metric [{}/{}/{}] [{}]=[{}]", aggregation, timeRollup, cluster,
 				this.metricPrefix + metricName, metricValue);
 
 		MetricWriter metricWriter = getMetricWriter(this.metricPrefix + metricName,
