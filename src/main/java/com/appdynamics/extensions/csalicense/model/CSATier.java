@@ -1,6 +1,6 @@
 package com.appdynamics.extensions.csalicense.model;
 
-public class CSATier {
+public class CSATier implements Cloneable {
 
 	private String id;
 	private int appdTierId;
@@ -11,6 +11,11 @@ public class CSATier {
 	private int totalReady;
 
 	private CSANode[] nodes;
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		return super.clone();
+	}
 
 	public CSANode[] getNodes() {
 		if (nodes == null) {

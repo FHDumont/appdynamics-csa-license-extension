@@ -12,6 +12,16 @@ public class CSANode {
 	private String totalEnabled;
 	private String totalReady;
 
+	private String serverName;
+
+	public String getServerName() {
+		return serverName;
+	}
+
+	public void setServerName(String serverName) {
+		this.serverName = serverName;
+	}
+
 	public String getId() {
 		return id;
 	}

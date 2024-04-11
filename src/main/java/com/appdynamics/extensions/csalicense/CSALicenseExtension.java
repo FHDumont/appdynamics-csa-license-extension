@@ -15,7 +15,6 @@ import com.appdynamics.extensions.csalicense.threads.ControllerThread;
 import com.appdynamics.extensions.csalicense.util.Common;
 import com.appdynamics.extensions.csalicense.util.Constants;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import com.singularity.ee.agent.systemagent.api.AManagedMonitor;
 import com.singularity.ee.agent.systemagent.api.MetricWriter;
 import com.singularity.ee.agent.systemagent.api.TaskExecutionContext;
@@ -121,7 +120,7 @@ public class CSALicenseExtension extends AManagedMonitor {
 
 					for (String serverName : controllerService.listServersLicensed.keySet()) {
 						totalVCPUController += controllerService.listServersLicensed.get(serverName);
-						this.logger.debug("  - Servidor {} e vCPU {}", serverName,
+						this.logger.info("  - Servidor {} e vCPU {}", serverName,
 								controllerService.listServersLicensed.get(serverName));
 					}
 

@@ -11,9 +11,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +25,7 @@ import com.appdynamics.extensions.csalicense.model.CSAApplication;
 import com.appdynamics.extensions.csalicense.model.CSANode;
 import com.appdynamics.extensions.csalicense.model.CSATier;
 import com.appdynamics.extensions.csalicense.model.ControllerInfo;
-import com.appdynamics.extensions.csalicense.model.Node;
+import com.appdynamics.extensions.csalicense.model.Server;
 import com.appdynamics.extensions.csalicense.util.Common;
 import com.appdynamics.extensions.csalicense.util.Constants;
 import com.appdynamics.extensions.logging.ExtensionsLoggerFactory;
@@ -47,6 +45,8 @@ public class ControllerService {
 	public ControllerInfo controllerInfo;
 	public Map<String, CSAApplication> listApplications;
 	public Map<String, Integer> listServersLicensed;
+	public Map<String, Server> listServers;
+	public Map<String, CSANode> listCSANode;
 
 	private ObjectMapper objectMapper;
 
@@ -111,6 +111,8 @@ public class ControllerService {
 
 		this.listApplications = new ConcurrentHashMap<>();
 		this.listServersLicensed = new ConcurrentHashMap<>();
+		this.listCSANode = new ConcurrentHashMap<>();
+
 		objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
@@ -188,64 +190,68 @@ public class ControllerService {
 			applications = objectMapper.readValue(
 					cleanRespondeBody(
 							httpResponse.body(),
-							"{\"applications\":",
-							"}],\"rowCount\":"),
+							"{\"applications\":", "}],\"rowCount\":", "}]"),
 					CSAApplication[].class);
 
 			for (CSAApplication application : applications) {
 				if (application.getTotalEnabled() > 0) {
-					application.setTiers(refreshTiers(application));
-					this.listApplications.put(application.getApplicationName(), application);
+					refreshTiers(application);
 				}
 
 			}
 		}
 
-		logger.debug("{} Found {} applications on CSA ", Common.getLogHeader(this, "refreshApplication"),
+		logger.info("{} Found {} applications on CSA ", Common.getLogHeader(this, "refreshApplication"),
 				this.listApplications.size());
 
 	}
 
-	public CSATier[] refreshTiers(CSAApplication application) throws Exception {
+	public void refreshTiers(CSAApplication application) throws Exception {
 		// /controller/argento/api/v2/applications/81c937c0-e4ac-4711-857a-b68b4531d12d/tiers?order=ASC&max=10
-		logger.debug("{} Searching tiers on CSA...", Common.getLogHeader(this, "refreshTiers"));
+		logger.info("{} Searching tiers on CSA {}...", Common.getLogHeader(this, "refreshTiers"),
+				application.getApplicationName());
 
 		CSATier[] tiers = new CSATier[0];
 
 		HttpResponse<String> httpResponse = getRequest(
-				String.format("/controller/argento/api/v2/applications/%s/tiers", application.getId()),
+				String.format(
+						"/controller/argento/api/v2/applications/%s/tiers?max=5000",
+						application.getId()),
 				Constants.HTTP_METHOD_GET, "");
+
+		// /controller/argento/api/v2/applications/b92f35d5-d5ee-436e-bd37-1c80fc8f634f/tiers?filter=tierSecurityEnabledComputed+eq+%22true%22&sort=countSecurityEnabled&order=DESC&max=10
 
 		if (httpResponse.statusCode() == 200
 				&& !httpResponse.body().equalsIgnoreCase("{\"tiers\":[],\"rowCount\":0}")) {
 			tiers = objectMapper.readValue(
 					cleanRespondeBody(
 							httpResponse.body(),
-							"{\"tiers\":",
-							"}],\"rowCount\":"),
+							"{\"tiers\":", "}],\"rowCount\":", "}]"),
 					CSATier[].class);
 		}
 
-		logger.debug("{} Found {} tiers on CSA ", Common.getLogHeader(this, "refreshTiers"), tiers.length);
+		logger.info("{} Found {} tiers on CSA {} ", Common.getLogHeader(this, "refreshTiers"), tiers.length,
+				application.getApplicationName());
 
 		for (CSATier tier : tiers) {
 			if (tier.getTotalEnabled() > 0) {
-				tier.setNodes(refreshNodes(tier));
+				refreshNodes(tier);
 			}
 		}
 
-		return tiers;
+		logger.info("{} Finished to looking for CSA data", Common.getLogHeader(this, "refreshTiers"));
+
 	}
 
-	public CSANode[] refreshNodes(CSATier tier) throws Exception {
+	public void refreshNodes(CSATier tier) throws Exception {
 		// /controller/argento/api/v2/tiers/5e2970c5-20d3-4545-aaf2-b8bd5c96f1c0/nodes?order=ASC&max=10
-		logger.debug("{} Searching nodes on CSA...", Common.getLogHeader(this, "refreshNodes"));
+		logger.debug("{} Searching nodes on CSA and tier {}...", Common.getLogHeader(this, "refreshNodes"),
+				tier.getTierName());
 
 		CSANode[] nodes = new CSANode[0];
-		List<CSANode> nodesEnabled = new ArrayList<>();
 
 		HttpResponse<String> httpResponse = getRequest(
-				String.format("/controller/argento/api/v2/tiers/%s/nodes", tier.getId()),
+				String.format("/controller/argento/api/v2/tiers/%s/nodes?max=5000", tier.getId()),
 				Constants.HTTP_METHOD_GET, "");
 
 		if (httpResponse.statusCode() == 200
@@ -253,48 +259,33 @@ public class ControllerService {
 			nodes = objectMapper.readValue(
 					cleanRespondeBody(
 							httpResponse.body(),
-							"{\"nodes\":",
-							"}],\"rowCount\":"),
+							"{\"nodes\":", "}],\"rowCount\":", "}]"),
 					CSANode[].class);
 		}
 
 		for (CSANode node : nodes) {
 			if (node.getTotalEnabled().equalsIgnoreCase("yes")) {
-				nodesEnabled.add(node);
+				String newNodeName = node.getNodeJvmId();
+				int indexHifen = newNodeName.indexOf("-");
+				if (indexHifen != -1) {
+					newNodeName = newNodeName.substring(0, indexHifen);
+				}
+				if (!this.listCSANode.containsKey(newNodeName)) {
+					node.setServerName(newNodeName);
+					this.listCSANode.put(newNodeName, node);
+				}
 			}
 		}
 
-		logger.debug("{} Found {} nodes on CSA ", Common.getLogHeader(this, "refreshNodes"), nodes.length);
+		logger.info("{} Found {} nodes on CSA and tier {}, but {} total unique nodes",
+				Common.getLogHeader(this, "refreshNodes"),
+				nodes.length,
+				tier.getTierName(),
+				this.listCSANode.size());
 
-		return nodesEnabled.toArray(new CSANode[nodesEnabled.size()]);
 	}
 
-	public Node[] getNodesByApplication(CSAApplication application) throws Exception {
-		// /controller/argento/api/v2/tiers/5e2970c5-20d3-4545-aaf2-b8bd5c96f1c0/nodes?order=ASC&max=10
-		logger.debug("{} Searching nodes on CSA...", Common.getLogHeader(this, "refreshNodes"));
-
-		Node[] nodes = new Node[0];
-
-		String payload = String.format(
-				"{\"requestFilter\":{\"queryParams\":{\"applicationId\":%s,\"performanceDataFilter\":\"REPORTING\",\"tags\":[]},\"filterAll\":false,\"filters\":[]},\"resultColumns\":[\"TIER_NAME\"],\"offset\":0,\"limit\":-1,\"searchFilters\":[],\"columnSorts\":[{\"column\":\"TIER_NAME\",\"direction\":\"ASC\"}],\"timeRangeStart\":%s,\"timeRangeEnd\":%s}",
-				application.getAppdId(), System.currentTimeMillis() - 3600000, System.currentTimeMillis());
-
-		HttpResponse<String> httpResponse = getRequest(
-				String.format("/controller/restui/v1/tiers/list/health"), Constants.HTTP_METHOD_POST, payload);
-
-		if (httpResponse.statusCode() == 200 && !httpResponse.body().startsWith("{ \"data\" : []")) {
-			nodes = objectMapper.readValue(
-					cleanRespondeBody(
-							httpResponse.body(),
-							"\"children\" :",
-							"} ] } ], \"totalCount\" :"),
-					Node[].class);
-		}
-
-		return nodes == null ? new Node[0] : nodes;
-	}
-
-	private String cleanRespondeBody(String body, String findStart, String findStop) throws Exception {
+	private String cleanRespondeBody(String body, String findStart, String findStop, String addFinal) throws Exception {
 
 		String serverReponseClean = "";
 
@@ -303,7 +294,7 @@ public class ControllerService {
 			int indexStart = bodyWithFormat.indexOf(findStart);
 			int indexStop = bodyWithFormat.indexOf(findStop);
 
-			serverReponseClean = bodyWithFormat.substring(indexStart + findStart.length(), indexStop) + "}]";
+			serverReponseClean = bodyWithFormat.substring(indexStart + findStart.length(), indexStop) + addFinal;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -313,18 +304,19 @@ public class ControllerService {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void getServerDetail(Node node) throws Exception {
-		logger.debug("{} Getting server detail...", Common.getLogHeader(this, "getServerDetail"));
+	public void getServerDetail(Server server) throws Exception {
+		logger.debug("{} Getting server detail [{}]...", Common.getLogHeader(this, "getServerDetail"),
+				server.getServerName());
 
 		HttpResponse<String> httpResponse = getRequest(
 				String.format(
-						"/controller/sim/v2/user/machines?appIds=&tierIds=&nodeIds=%s&format=LITE&tags=&types=PHYSICAL,CONTAINER_AWARE&offset=0&limit=-1",
-						node.getNodeId()),
+						"/controller/sim/v2/user/machines/%s",
+						server.getMachineId()),
 				Constants.HTTP_METHOD_GET, "");
 
-		if (httpResponse.statusCode() == 200 && !httpResponse.body().equals("[]")) {
+		if (httpResponse.statusCode() == 200 && !httpResponse.body().equals("{}")) {
 
-			Object serverDetailObject = objectMapper.readValue(httpResponse.body(), Object[].class)[0];
+			Object serverDetailObject = objectMapper.readValue(httpResponse.body(), Object.class);
 			LinkedHashMap<String, Object> values = (LinkedHashMap<String, Object>) serverDetailObject;
 			LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) values.get("properties");
 
@@ -383,7 +375,6 @@ public class ControllerService {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	public boolean isDashboardExists() throws Exception {
 
 		// /controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=
@@ -395,23 +386,24 @@ public class ControllerService {
 				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=",
 				Constants.HTTP_METHOD_GET, "");
 
-		if (httpResponse.statusCode() == 200) {
+		if (httpResponse.statusCode() == 200
+				&& httpResponse.body().indexOf("\"data\" : [ ]") == -1) {
 
-			Object[] dashObjects = objectMapper.readValue(
-					cleanRespondeBody(
-							httpResponse.body(),
-							"\"data\" :",
-							"} ], \"totalCount\" :"),
-					Object[].class);
+			// Object[] dashObjects = objectMapper.readValue(
+			// cleanRespondeBody(
+			// httpResponse.body(),
+			// "\"data\" :",
+			// "], \"totalCount\" :"),
+			// Object[].class);
 
-			for (Object data : dashObjects) {
-				LinkedHashMap<String, Object> values = (LinkedHashMap<String, Object>) data;
-				String name = (String) values.get("name");
-				if (name.equals("CSA License")) {
-					thereIsDashboard = true;
-					break;
-				}
-			}
+			// for (Object data : dashObjects) {
+			// LinkedHashMap<String, Object> values = (LinkedHashMap<String, Object>) data;
+			// String name = (String) values.get("name");
+			// if (name.equals("CSA License")) {
+			thereIsDashboard = true;
+			// break;
+			// }
+			// }
 
 		}
 
@@ -427,6 +419,33 @@ public class ControllerService {
 		}
 
 		return password;
+	}
+
+	public void refreshServers() throws Exception {
+		logger.debug("{} Searching servers...", Common.getLogHeader(this, "refreshServers"));
+
+		this.listServers = new ConcurrentHashMap<>();
+
+		String payload = String.format(
+				"{\"filter\":{\"appIds\":[],\"nodeIds\":[],\"tierIds\":[],\"types\":[\"PHYSICAL\",\"CONTAINER_AWARE\"],\"timeRangeStart\":%s,\"timeRangeEnd\":%s},\"sorter\":{\"field\":\"HEALTH\",\"direction\":\"ASC\"}}",
+				System.currentTimeMillis() - 3600000, System.currentTimeMillis());
+
+		HttpResponse<String> httpResponse = getRequest("/controller/sim/v2/user/machines/keys",
+				Constants.HTTP_METHOD_POST, payload);
+
+		String serverReponseClean = httpResponse.body().replace("],\"simEnabledMachineExists\":true}", "")
+				.replace("{\"machineKeys\":[", "");
+
+		serverReponseClean = "[" + serverReponseClean.replace("}{", "},{") + "]";
+
+		Server[] servers = objectMapper.readValue(serverReponseClean, Server[].class);
+		for (Server server : servers) {
+			this.listServers.put(server.getServerName().toLowerCase(), server);
+		}
+
+		logger.debug("{} Found {} servers (machine agents)", Common.getLogHeader(this, "refreshServers"),
+				this.listServers.size());
+
 	}
 
 }
