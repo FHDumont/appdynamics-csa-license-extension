@@ -120,7 +120,7 @@ public class CSALicenseExtension extends AManagedMonitor {
 
 					for (String serverName : controllerService.listServersLicensed.keySet()) {
 						totalVCPUController += controllerService.listServersLicensed.get(serverName);
-						this.logger.info("  - Servidor {} e vCPU {}", serverName,
+						this.logger.debug("  - Servidor {} e vCPU {}", serverName,
 								controllerService.listServersLicensed.get(serverName));
 					}
 
@@ -166,7 +166,7 @@ public class CSALicenseExtension extends AManagedMonitor {
 							MetricWriter.METRIC_TIME_ROLLUP_TYPE_CURRENT,
 							MetricWriter.METRIC_CLUSTER_ROLLUP_TYPE_COLLECTIVE);
 
-					this.logger.info("=> TOTAL DE VCPU NO CONTRATO: {}", totalVCPU);
+					this.logger.info("=> TOTAL DE VCPU EM TODAS CONTROLLERS: {}", totalVCPU);
 
 				} catch (Exception e) {
 					this.logger.error("{} {}...",

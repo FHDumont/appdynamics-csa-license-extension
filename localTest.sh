@@ -11,7 +11,7 @@ kill_process() {
 }
 kill_process
 
-MACHINE_AGENT_FOLDER=/Users/fdumont/Downloads/AppD/machineagent-bundle-64bit-linux-aarch64-23.12.0.3894
+MACHINE_AGENT_FOLDER=/Users/fdumont/Downloads/AppD/machineagent-bundle-64bit-linux-aarch64-24.3.0.4127
 
 mvn clean install
 
