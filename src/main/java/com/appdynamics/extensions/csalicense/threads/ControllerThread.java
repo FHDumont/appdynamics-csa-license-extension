@@ -11,12 +11,15 @@ public class ControllerThread extends Thread {
 	public static final Logger logger = ExtensionsLoggerFactory.getLogger(ControllerThread.class);
 
 	private ControllerService controllerService;
+	public boolean isRunning;
 
 	public ControllerThread(ControllerService controllerService) {
 		this.controllerService = controllerService;
+		this.isRunning = false;
 	}
 
 	public void run() {
+		this.isRunning = true;
 		try {
 			controllerService.refreshServers();
 			controllerService.refreshApplication();
@@ -30,16 +33,23 @@ public class ControllerThread extends Thread {
 						&& !controllerService.listServersLicensed.containsKey(serverName)) {
 					totalServersChecked += 1;
 
-					logger.info("{} Looking detail for server {}, total servers until now [{}] from [{}]",
+					logger.debug("{} Looking detail for server {}, total servers until now [{}] from [{}]",
 							Common.getLogHeader(this, "run"),
 							serverName, totalServersChecked, controllerService.listCSANode.size());
 					controllerService.getServerDetail(controllerService.listServers.get(serverName));
+
+					if (totalServersChecked % 100 == 0) {
+						logger.info("{} Total servers until now [{}] from [{}]",
+								Common.getLogHeader(this, "run"),
+								totalServersChecked, controllerService.listCSANode.size());
+					}
 				}
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		this.isRunning = false;
 	}
 
 }

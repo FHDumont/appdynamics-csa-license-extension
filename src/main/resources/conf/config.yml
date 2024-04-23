@@ -15,3 +15,4 @@ formatDate: dd/MM/yyyy HH:mm:ss
 publishMetrics: true
 saveDashboard: https://xxxx.saas.appdynamics.com
 machineAgentName: MACHINE_AGENT_NAME
+frequency: 30

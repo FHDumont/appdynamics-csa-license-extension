@@ -12,6 +12,7 @@ public class Constants {
     public static final String SAVE_DASHBOARD = "saveDashboard";
     public static final String MACHINE_AGENT_NAME = "machineAgentName";
     public static final String ENCRYPTION_KEY = "encryptionKey";
+    public static final String FREQUENCY = "frequency";
 
     public static final String HTTP_METHOD_POST = "POST";
     public static final String HTTP_METHOD_GET = "GET";

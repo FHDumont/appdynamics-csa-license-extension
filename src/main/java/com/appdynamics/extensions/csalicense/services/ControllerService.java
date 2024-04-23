@@ -330,6 +330,8 @@ public class ControllerService {
 	public void createDashboard(String taskDir) throws Exception {
 		if (!isDashboardExists()) {
 
+			logger.info("{} Creating the dashboard...", Common.getLogHeader(this, "isDashboardExists"));
+
 			HttpRequest httpRequest = null;
 			HttpResponse<String> httpResponse;
 
@@ -378,34 +380,22 @@ public class ControllerService {
 	public boolean isDashboardExists() throws Exception {
 
 		// /controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=
-		logger.debug("{} Searching nodes on CSA...", Common.getLogHeader(this, "refreshNodes"));
+		logger.debug("{} Checking if there is the dashboard...", Common.getLogHeader(this, "isDashboardExists"));
 
 		Boolean thereIsDashboard = false;
 
 		HttpResponse<String> httpResponse = getRequest(
-				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=",
+				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20Licensexxx&sort_key=NAME&sort_direction=ASC&created_by=",
 				Constants.HTTP_METHOD_GET, "");
 
-		if (httpResponse.statusCode() == 200
-				&& httpResponse.body().indexOf("\"data\" : [ ]") == -1) {
+		if (httpResponse.statusCode() == 200) {
 
-			// Object[] dashObjects = objectMapper.readValue(
-			// cleanRespondeBody(
-			// httpResponse.body(),
-			// "\"data\" :",
-			// "], \"totalCount\" :"),
-			// Object[].class);
-
-			// for (Object data : dashObjects) {
-			// LinkedHashMap<String, Object> values = (LinkedHashMap<String, Object>) data;
-			// String name = (String) values.get("name");
-			// if (name.equals("CSA License")) {
-			thereIsDashboard = true;
-			// break;
-			// }
-			// }
-
+			if (httpResponse.body().indexOf("\"name\": \"CSA License\"") != -1) {
+				thereIsDashboard = true;
+			}
 		}
+
+		logger.info("{} There is the dashboard {}", Common.getLogHeader(this, "isDashboardExists"), thereIsDashboard);
 
 		return thereIsDashboard;
 	}
