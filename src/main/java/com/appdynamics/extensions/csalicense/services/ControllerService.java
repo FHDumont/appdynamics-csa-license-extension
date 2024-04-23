@@ -385,12 +385,12 @@ public class ControllerService {
 		Boolean thereIsDashboard = false;
 
 		HttpResponse<String> httpResponse = getRequest(
-				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20Licensexxx&sort_key=NAME&sort_direction=ASC&created_by=",
+				"/controller/restui/dashboards/searchDashboardSummaries?offset=0&batch_size=50&query=CSA%20License&sort_key=NAME&sort_direction=ASC&created_by=",
 				Constants.HTTP_METHOD_GET, "");
 
 		if (httpResponse.statusCode() == 200) {
 
-			if (httpResponse.body().indexOf("\"name\": \"CSA License\"") != -1) {
+			if (httpResponse.body().indexOf("\"name\" : \"CSA License\"") != -1) {
 				thereIsDashboard = true;
 			}
 		}
