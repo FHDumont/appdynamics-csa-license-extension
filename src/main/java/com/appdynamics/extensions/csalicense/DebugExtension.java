@@ -16,8 +16,7 @@ public class DebugExtension {
 			CSALicenseExtension csaLicenseExtension = new CSALicenseExtension();
 
 			configMap.put("config-file", "config.yml");
-			taskExecutionContext.setTaskDir(
-					"/Users/fdumont/Developer/GitHub/appdynamics-csa-license-extension/src/main/resources/conf");
+			taskExecutionContext.setTaskDir("/Users/fdumont/Developer/GitHub/appdynamics-csa-license-extension/src/main/resources/conf");
 
 			csaLicenseExtension.execute(configMap, taskExecutionContext);
 

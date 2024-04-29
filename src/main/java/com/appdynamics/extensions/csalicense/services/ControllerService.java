@@ -54,32 +54,22 @@ public class ControllerService {
 		this.controllerInfo = controllerInfo;
 
 		try {
-			this.controllerInfo
-					.setPassword(getPassword(controllerInfo.getPassword(),
-							(String) yamlConfig.get(Constants.ENCRYPTION_KEY)));
+			this.controllerInfo.setPassword(getPassword(controllerInfo.getPassword(), (String) yamlConfig.get(Constants.ENCRYPTION_KEY)));
 		} catch (DecryptionException exDecryption) {
 			logger.error("Error getPassword for controller {}", controllerInfo.getControllerHost(), exDecryption);
 		}
 		this.controllerInfo.setMachineAgentName((String) yamlConfig.get(Constants.MACHINE_AGENT_NAME));
 
-		logger.info("{} Connecting to controller: [{}] using username: [{}]",
-				Common.getLogHeader(this, "constructor"),
-				this.controllerInfo.getControllerHost(),
+		logger.info("{} Connecting to controller: [{}] using username: [{}]", Common.getLogHeader(this, "constructor"), this.controllerInfo.getControllerHost(),
 				this.controllerInfo.getUserName());
 
-		logger.info("{} Verificando necessidade de proxy [{}]",
-				Common.getLogHeader(this, "constructor"),
-				this.controllerInfo.getProxyHost());
+		logger.info("{} Verificando necessidade de proxy [{}]", Common.getLogHeader(this, "constructor"), this.controllerInfo.getProxyHost());
 
 		if (this.controllerInfo.getProxyHost() != null && !this.controllerInfo.getProxyHost().equals("")) {
-			logger.info("{} Setting proxy [{}] [{}] [{}]",
-					Common.getLogHeader(this, "constructor"),
-					this.controllerInfo.getProxyHost(),
-					this.controllerInfo.getProxyPort(),
-					this.controllerInfo.getProxySsl());
+			logger.info("{} Setting proxy [{}] [{}] [{}]", Common.getLogHeader(this, "constructor"), this.controllerInfo.getProxyHost(),
+					this.controllerInfo.getProxyPort(), this.controllerInfo.getProxySsl());
 
-			InetSocketAddress proxyAddress = new InetSocketAddress(this.controllerInfo.getProxyHost(),
-					this.controllerInfo.getProxyPort());
+			InetSocketAddress proxyAddress = new InetSocketAddress(this.controllerInfo.getProxyHost(), this.controllerInfo.getProxyPort());
 			ProxySelector proxySelector = ProxySelector.of(proxyAddress);
 			this.client = HttpClient.newBuilder().proxy(proxySelector).version(HttpClient.Version.HTTP_2).build();
 
@@ -87,21 +77,16 @@ public class ControllerService {
 			this.client = HttpClient.newBuilder().build();
 		}
 
-		String payload = String.format("userName=%s&password=%s&accountName=%s",
-				controllerInfo.getUserName(),
-				Base64.getEncoder().encodeToString(
-						URLEncoder.encode(controllerInfo.getPassword(), StandardCharsets.UTF_8)
-								.getBytes(StandardCharsets.UTF_8)),
+		String payload = String.format("userName=%s&password=%s&accountName=%s", controllerInfo.getUserName(),
+				Base64.getEncoder().encodeToString(URLEncoder.encode(controllerInfo.getPassword(), StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8)),
 				controllerInfo.getAccountName());
 
-		HttpResponse<String> httpResponse = getRequest("/controller/auth?action=login",
-				Constants.HTTP_METHOD_GET, payload);
+		HttpResponse<String> httpResponse = getRequest("/controller/auth?action=login", Constants.HTTP_METHOD_GET, payload);
 
 		HttpHeaders headers = httpResponse.headers();
 		this.cookies = headers.allValues("Set-Cookie");
 
-		logger.info("Connected Controller Controller {} {}",
-				this.controllerInfo.getControllerHost(), httpResponse.statusCode());
+		logger.info("Connected Controller Controller {} {}", this.controllerInfo.getControllerHost(), httpResponse.statusCode());
 
 		this.controllerInfo.setIsAvaliable(false);
 		this.controllerInfo.setIsAllowedCSA(false);
@@ -122,48 +107,35 @@ public class ControllerService {
 		HttpRequest httpRequest = null;
 		HttpResponse<String> httpResponse;
 
-		logger.debug("{} Requesting URL: [{}], method [{}] and payload: [{}]", Common.getLogHeader(this, "getRequest"),
-				uri, method, payload);
+		logger.debug("{} Requesting URL: [{}], method [{}] and payload: [{}]", Common.getLogHeader(this, "getRequest"), uri, method, payload);
 
 		if (uri.equalsIgnoreCase("/controller/auth?action=login")) {
 			logger.debug("{} It's login using form", Common.getLogHeader(this, "getRequest"));
-			httpRequest = HttpRequest.newBuilder()
-					.uri(new URI(controllerInfo.getControllerHost() + uri))
-					.header("Content-Type", "application/x-www-form-urlencoded")
-					.header("Accept", "application/json, text/plain, */*")
-					.header("Accept-Encoding", "gzip, deflate, br, zstd")
-					.POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
-					.build();
+			httpRequest = HttpRequest.newBuilder().uri(new URI(controllerInfo.getControllerHost() + uri))
+					.header("Content-Type", "application/x-www-form-urlencoded").header("Accept", "application/json, text/plain, */*")
+					.header("Accept-Encoding", "gzip, deflate, br, zstd").POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8)).build();
 		} else {
 			switch (method) {
-				case Constants.HTTP_METHOD_POST:
-					httpRequest = HttpRequest.newBuilder()
-							.uri(new URI(controllerInfo.getControllerHost() + uri))
-							.header("Content-Type", "application/json;charset=UTF-8")
-							.header("Accept", "application/json, text/plain, */*")
-							.header("Cookie", Common.getCookies(this.cookies))
-							.POST(HttpRequest.BodyPublishers.ofString(payload))
-							.build();
+			case Constants.HTTP_METHOD_POST:
+				httpRequest = HttpRequest.newBuilder().uri(new URI(controllerInfo.getControllerHost() + uri))
+						.header("Content-Type", "application/json;charset=UTF-8").header("Accept", "application/json, text/plain, */*")
+						.header("Cookie", Common.getCookies(this.cookies)).POST(HttpRequest.BodyPublishers.ofString(payload)).build();
 
-					break;
-				case Constants.HTTP_METHOD_GET:
-					httpRequest = HttpRequest.newBuilder()
-							.uri(new URI(controllerInfo.getControllerHost() + uri))
-							.header("Content-Type", "application/json;charset=UTF-8")
-							.header("Accept", "application/json, text/plain, */*")
-							.header("Cookie", Common.getCookies(this.cookies))
-							.build();
-					break;
+				break;
+			case Constants.HTTP_METHOD_GET:
+				httpRequest = HttpRequest.newBuilder().uri(new URI(controllerInfo.getControllerHost() + uri))
+						.header("Content-Type", "application/json;charset=UTF-8").header("Accept", "application/json, text/plain, */*")
+						.header("Cookie", Common.getCookies(this.cookies)).build();
+				break;
 
-				default:
-					logger.debug("{} Request type GET", Common.getLogHeader(this, "getRequest"));
-					break;
+			default:
+				logger.debug("{} Request type GET", Common.getLogHeader(this, "getRequest"));
+				break;
 			}
 		}
 
 		httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-		logger.debug("{} Response Status Code: [{}]", Common.getLogHeader(this, "getRequest"),
-				httpResponse.statusCode());
+		logger.debug("{} Response Status Code: [{}]", Common.getLogHeader(this, "getRequest"), httpResponse.statusCode());
 		logger.debug("{} Response Status Body: [{}]", Common.getLogHeader(this, "getRequest"), httpResponse.body());
 
 		return httpResponse;
@@ -177,20 +149,15 @@ public class ControllerService {
 
 		CSAApplication[] applications = new CSAApplication[0];
 
-		HttpResponse<String> httpResponse = getRequest("/controller/argento/api/v2/applications",
-				Constants.HTTP_METHOD_GET, "");
+		HttpResponse<String> httpResponse = getRequest("/controller/argento/api/v2/applications", Constants.HTTP_METHOD_GET, "");
 
 		if (httpResponse.statusCode() == 200) {
 			this.controllerInfo.setIsAllowedCSA(true);
 		}
 
-		if (httpResponse.statusCode() == 200
-				&& !httpResponse.body().equalsIgnoreCase("{\"applications\":[],\"rowCount\":0}")) {
+		if (httpResponse.statusCode() == 200 && !httpResponse.body().equalsIgnoreCase("{\"applications\":[],\"rowCount\":0}")) {
 
-			applications = objectMapper.readValue(
-					cleanRespondeBody(
-							httpResponse.body(),
-							"{\"applications\":", "}],\"rowCount\":", "}]"),
+			applications = objectMapper.readValue(cleanRespondeBody(httpResponse.body(), "{\"applications\":", "}],\"rowCount\":", "}]"),
 					CSAApplication[].class);
 
 			for (CSAApplication application : applications) {
@@ -201,37 +168,26 @@ public class ControllerService {
 			}
 		}
 
-		logger.info("{} Found {} applications on CSA ", Common.getLogHeader(this, "refreshApplication"),
-				this.listApplications.size());
+		logger.info("{} Found {} applications on CSA ", Common.getLogHeader(this, "refreshApplication"), this.listApplications.size());
 
 	}
 
 	public void refreshTiers(CSAApplication application) throws Exception {
 		// /controller/argento/api/v2/applications/81c937c0-e4ac-4711-857a-b68b4531d12d/tiers?order=ASC&max=10
-		logger.info("{} Searching tiers on CSA {}...", Common.getLogHeader(this, "refreshTiers"),
-				application.getApplicationName());
+		logger.info("{} Searching tiers on CSA {}...", Common.getLogHeader(this, "refreshTiers"), application.getApplicationName());
 
 		CSATier[] tiers = new CSATier[0];
 
-		HttpResponse<String> httpResponse = getRequest(
-				String.format(
-						"/controller/argento/api/v2/applications/%s/tiers?max=5000",
-						application.getId()),
+		HttpResponse<String> httpResponse = getRequest(String.format("/controller/argento/api/v2/applications/%s/tiers?max=5000", application.getId()),
 				Constants.HTTP_METHOD_GET, "");
 
 		// /controller/argento/api/v2/applications/b92f35d5-d5ee-436e-bd37-1c80fc8f634f/tiers?filter=tierSecurityEnabledComputed+eq+%22true%22&sort=countSecurityEnabled&order=DESC&max=10
 
-		if (httpResponse.statusCode() == 200
-				&& !httpResponse.body().equalsIgnoreCase("{\"tiers\":[],\"rowCount\":0}")) {
-			tiers = objectMapper.readValue(
-					cleanRespondeBody(
-							httpResponse.body(),
-							"{\"tiers\":", "}],\"rowCount\":", "}]"),
-					CSATier[].class);
+		if (httpResponse.statusCode() == 200 && !httpResponse.body().equalsIgnoreCase("{\"tiers\":[],\"rowCount\":0}")) {
+			tiers = objectMapper.readValue(cleanRespondeBody(httpResponse.body(), "{\"tiers\":", "}],\"rowCount\":", "}]"), CSATier[].class);
 		}
 
-		logger.info("{} Found {} tiers on CSA {} ", Common.getLogHeader(this, "refreshTiers"), tiers.length,
-				application.getApplicationName());
+		logger.info("{} Found {} tiers on CSA {} ", Common.getLogHeader(this, "refreshTiers"), tiers.length, application.getApplicationName());
 
 		for (CSATier tier : tiers) {
 			if (tier.getTotalEnabled() > 0) {
@@ -245,22 +201,15 @@ public class ControllerService {
 
 	public void refreshNodes(CSATier tier) throws Exception {
 		// /controller/argento/api/v2/tiers/5e2970c5-20d3-4545-aaf2-b8bd5c96f1c0/nodes?order=ASC&max=10
-		logger.debug("{} Searching nodes on CSA and tier {}...", Common.getLogHeader(this, "refreshNodes"),
-				tier.getTierName());
+		logger.debug("{} Searching nodes on CSA and tier {}...", Common.getLogHeader(this, "refreshNodes"), tier.getTierName());
 
 		CSANode[] nodes = new CSANode[0];
 
-		HttpResponse<String> httpResponse = getRequest(
-				String.format("/controller/argento/api/v2/tiers/%s/nodes?max=5000", tier.getId()),
+		HttpResponse<String> httpResponse = getRequest(String.format("/controller/argento/api/v2/tiers/%s/nodes?max=5000", tier.getId()),
 				Constants.HTTP_METHOD_GET, "");
 
-		if (httpResponse.statusCode() == 200
-				&& !httpResponse.body().equalsIgnoreCase("{\"nodes\":[],\"rowCount\":0}")) {
-			nodes = objectMapper.readValue(
-					cleanRespondeBody(
-							httpResponse.body(),
-							"{\"nodes\":", "}],\"rowCount\":", "}]"),
-					CSANode[].class);
+		if (httpResponse.statusCode() == 200 && !httpResponse.body().equalsIgnoreCase("{\"nodes\":[],\"rowCount\":0}")) {
+			nodes = objectMapper.readValue(cleanRespondeBody(httpResponse.body(), "{\"nodes\":", "}],\"rowCount\":", "}]"), CSANode[].class);
 		}
 
 		for (CSANode node : nodes) {
@@ -277,11 +226,8 @@ public class ControllerService {
 			}
 		}
 
-		logger.info("{} Found {} nodes on CSA and tier {}, but {} total unique nodes",
-				Common.getLogHeader(this, "refreshNodes"),
-				nodes.length,
-				tier.getTierName(),
-				this.listCSANode.size());
+		logger.info("{} Found {} nodes on CSA and tier {}, but {} total unique nodes", Common.getLogHeader(this, "refreshNodes"), nodes.length,
+				tier.getTierName(), this.listCSANode.size());
 
 	}
 
@@ -305,14 +251,10 @@ public class ControllerService {
 
 	@SuppressWarnings("unchecked")
 	public void getServerDetail(Server server) throws Exception {
-		logger.debug("{} Getting server detail [{}]...", Common.getLogHeader(this, "getServerDetail"),
-				server.getServerName());
+		logger.debug("{} Getting server detail [{}]...", Common.getLogHeader(this, "getServerDetail"), server.getServerName());
 
-		HttpResponse<String> httpResponse = getRequest(
-				String.format(
-						"/controller/sim/v2/user/machines/%s",
-						server.getMachineId()),
-				Constants.HTTP_METHOD_GET, "");
+		HttpResponse<String> httpResponse = getRequest(String.format("/controller/sim/v2/user/machines/%s", server.getMachineId()), Constants.HTTP_METHOD_GET,
+				"");
 
 		if (httpResponse.statusCode() == 200 && !httpResponse.body().equals("{}")) {
 
@@ -346,9 +288,7 @@ public class ControllerService {
 			StringBuffer formData = new StringBuffer();
 
 			formData.append("--" + boundary + "\r\n");
-			formData.append(
-					"Content-Disposition: form-data; name=\"file\"; filename=\"" + filePath.getFileName()
-							+ "\"\r\n\r\n");
+			formData.append("Content-Disposition: form-data; name=\"file\"; filename=\"" + filePath.getFileName() + "\"\r\n\r\n");
 
 			byte[] partHeaderBytes = formData.toString().getBytes();
 			byte[] partFooterBytes = ("\r\n--" + boundary + "--\r\n").getBytes();
@@ -357,20 +297,14 @@ public class ControllerService {
 			byte[] requestBody = new byte[partHeaderBytes.length + fileContent.length + partFooterBytes.length];
 			System.arraycopy(partHeaderBytes, 0, requestBody, 0, partHeaderBytes.length);
 			System.arraycopy(fileContent, 0, requestBody, partHeaderBytes.length, fileContent.length);
-			System.arraycopy(partFooterBytes, 0, requestBody, partHeaderBytes.length + fileContent.length,
-					partFooterBytes.length);
+			System.arraycopy(partFooterBytes, 0, requestBody, partHeaderBytes.length + fileContent.length, partFooterBytes.length);
 
-			httpRequest = HttpRequest.newBuilder()
-					.uri(new URI(controllerInfo.getControllerHost() + "/CustomDashboardImportExportServlet"))
-					.header("Content-Type", "multipart/form-data;boundary=" + boundary)
-					.header("Accept", "text/html,application/xhtml+xml,application/xml")
-					.header("Cookie", Common.getCookies(this.cookies))
-					.POST(HttpRequest.BodyPublishers.ofByteArray(requestBody))
-					.build();
+			httpRequest = HttpRequest.newBuilder().uri(new URI(controllerInfo.getControllerHost() + "/CustomDashboardImportExportServlet"))
+					.header("Content-Type", "multipart/form-data;boundary=" + boundary).header("Accept", "text/html,application/xhtml+xml,application/xml")
+					.header("Cookie", Common.getCookies(this.cookies)).POST(HttpRequest.BodyPublishers.ofByteArray(requestBody)).build();
 
 			httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-			logger.debug("{} Response Status Code: [{}]", Common.getLogHeader(this, "getRequest"),
-					httpResponse.statusCode());
+			logger.debug("{} Response Status Code: [{}]", Common.getLogHeader(this, "getRequest"), httpResponse.statusCode());
 			logger.debug("{} Response Status Body: [{}]", Common.getLogHeader(this, "getRequest"), httpResponse.body());
 
 		}
@@ -420,11 +354,9 @@ public class ControllerService {
 				"{\"filter\":{\"appIds\":[],\"nodeIds\":[],\"tierIds\":[],\"types\":[\"PHYSICAL\",\"CONTAINER_AWARE\"],\"timeRangeStart\":%s,\"timeRangeEnd\":%s},\"sorter\":{\"field\":\"HEALTH\",\"direction\":\"ASC\"}}",
 				System.currentTimeMillis() - 3600000, System.currentTimeMillis());
 
-		HttpResponse<String> httpResponse = getRequest("/controller/sim/v2/user/machines/keys",
-				Constants.HTTP_METHOD_POST, payload);
+		HttpResponse<String> httpResponse = getRequest("/controller/sim/v2/user/machines/keys", Constants.HTTP_METHOD_POST, payload);
 
-		String serverReponseClean = httpResponse.body().replace("],\"simEnabledMachineExists\":true}", "")
-				.replace("{\"machineKeys\":[", "");
+		String serverReponseClean = httpResponse.body().replace("],\"simEnabledMachineExists\":true}", "").replace("{\"machineKeys\":[", "");
 
 		serverReponseClean = "[" + serverReponseClean.replace("}{", "},{") + "]";
 
@@ -433,8 +365,7 @@ public class ControllerService {
 			this.listServers.put(server.getServerName().toLowerCase(), server);
 		}
 
-		logger.debug("{} Found {} servers (machine agents)", Common.getLogHeader(this, "refreshServers"),
-				this.listServers.size());
+		logger.debug("{} Found {} servers (machine agents)", Common.getLogHeader(this, "refreshServers"), this.listServers.size());
 
 	}
 
