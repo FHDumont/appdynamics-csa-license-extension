@@ -8,9 +8,6 @@ public class Constants {
 
     public static final String METRIC_PREFIX = "metricPrefix";
     public static final String FORMAT_DATE = "formatDate";
-    public static final String PUBLISH_METRICS = "publishMetrics";
-    public static final String SAVE_DASHBOARD = "saveDashboard";
-    public static final String MACHINE_AGENT_NAME = "machineAgentName";
     public static final String ENCRYPTION_KEY = "encryptionKey";
     public static final String FREQUENCY = "frequency";
 

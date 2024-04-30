@@ -1,5 +1,6 @@
 package com.appdynamics.extensions.csalicense.services;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -58,7 +59,6 @@ public class ControllerService {
 		} catch (DecryptionException exDecryption) {
 			logger.error("Error getPassword for controller {}", controllerInfo.getControllerHost(), exDecryption);
 		}
-		this.controllerInfo.setMachineAgentName((String) yamlConfig.get(Constants.MACHINE_AGENT_NAME));
 
 		logger.info("{} Connecting to controller: [{}] using username: [{}]", Common.getLogHeader(this, "constructor"), this.controllerInfo.getControllerHost(),
 				this.controllerInfo.getUserName());
@@ -280,7 +280,7 @@ public class ControllerService {
 			Path filePath = Path.of(taskDir + "/csa_license.json");
 
 			String contentFile = Files.readString(filePath, StandardCharsets.UTF_8);
-			contentFile = contentFile.replaceAll("MACHINE_AGENT_NAME", this.controllerInfo.getMachineAgentName());
+			contentFile = contentFile.replaceAll("MACHINE_AGENT_NAME", InetAddress.getLocalHost().getHostName());
 			byte[] fileContent = contentFile.getBytes(StandardCharsets.UTF_8);
 
 			String boundary = UUID.randomUUID().toString();

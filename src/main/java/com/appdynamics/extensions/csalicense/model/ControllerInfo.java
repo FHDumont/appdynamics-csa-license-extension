@@ -4,6 +4,7 @@ public class ControllerInfo {
 
 	private String displayName;
 	private String controllerHost;
+	private Boolean createDashboard;
 	private String userName;
 	private String password;
 	private String accountName;
@@ -14,15 +15,6 @@ public class ControllerInfo {
 	private Boolean isAvaliable;
 	private Boolean isAllowedCSA;
 	private String encryptionKey;
-	private String machineAgentName;
-
-	public String getMachineAgentName() {
-		return machineAgentName;
-	}
-
-	public void setMachineAgentName(String machineAgentName) {
-		this.machineAgentName = machineAgentName;
-	}
 
 	public String getEncryptionKey() {
 		return encryptionKey;
@@ -112,4 +104,17 @@ public class ControllerInfo {
 		this.proxySsl = proxySsl;
 	}
 
+	/**
+	 * @return the createDashboard
+	 */
+	public Boolean isCreateDashboard() {
+		return createDashboard;
+	}
+
+	/**
+	 * @param createDashboard the createDashboard to set
+	 */
+	public void setCreateDashboard(Boolean createDashboard) {
+		this.createDashboard = createDashboard;
+	}
 }
